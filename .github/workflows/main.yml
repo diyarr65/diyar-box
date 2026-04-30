@@ -6,16 +6,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - name: Install Flet
-        run: pip install flet
-      - name: Build APK
+
+      - name: Install Dependencies
         run: |
-          # Flet'in bulut üzerinde APK oluşturma komutu
-          flet build apk
+          pip install flet
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build APK
+        run: flet build apk
+
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
