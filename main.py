@@ -2,37 +2,41 @@ import os
 import ssl
 import flet as ft
 import yt_dlp
+import traceback
 
-# SSL Sertifika Sorunlarını Giderme
+# SSL Sertifika hatalarını bypass et
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def main(page: ft.Page):
-    # Sayfa Genel Ayarları
     page.title = "DiyarBox"
     page.theme_mode = ft.ThemeMode.DARK
-    page.padding = 0
-    page.window_width = 400
-    page.window_height = 700
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.scroll = ft.ScrollMode.AUTO
 
-    # İndirme Fonksiyonu
+    # Uygulama başladığında ilk burası çalışır
+    def startup_check():
+        status_text.value = "DiyarBox Hazır!"
+        page.update()
+
+    url_input = ft.TextField(
+        label="Video Linkini Buraya Yapıştır",
+        width=320,
+        border_radius=10
+    )
+    
+    status_text = ft.Text("Başlatılıyor...", text_align=ft.TextAlign.CENTER)
+
     def download_video(e):
-        if not url_input.value:
-            status_text.value = "⚠️ Lütfen bir link yapıştırın!"
-            status_text.color = ft.colors.AMBER_400
-            page.update()
-            return
-
         try:
-            # Görsel Geri Bildirim: Butonu devre dışı bırak ve yükleniyor göster
-            download_btn.disabled = True
-            progress_bar.visible = True
-            status_text.value = "🔄 Video işleniyor..."
-            status_text.color = ft.colors.BLUE_200
+            if not url_input.value:
+                status_text.value = "⚠️ Link boş olamaz!"
+                page.update()
+                return
+
+            status_text.value = "🔄 İndirme başlatıldı..."
             page.update()
 
-            # Android İndirme Yolu
+            # Infinix/Android için en stabil yol
             download_path = '/storage/emulated/0/Download/%(title)s.%(ext)s'
 
             ydl_opts = {
@@ -46,76 +50,35 @@ def main(page: ft.Page):
                 ydl.download([url_input.value])
 
             status_text.value = "✅ Başarıyla İndirildi!"
-            status_text.color = ft.colors.GREEN_ACCENT_400
-            url_input.value = "" # Girişi temizle
-            
+            status_text.color = ft.colors.GREEN_400
+            url_input.value = ""
         except Exception as ex:
-            status_text.value = f"❌ Hata: {str(ex)[:50]}..."
+            # Hata oluşursa tam hatayı ekrana yazdır ki görebilelim
+            status_text.value = f"❌ Hata: {str(ex)}"
             status_text.color = ft.colors.RED_400
         
-        finally:
-            download_btn.disabled = False
-            progress_bar.visible = False
-            page.update()
+        page.update()
 
-    # Arayüz Elemanları
-    url_input = ft.TextField(
-        label="Video Linki",
-        hint_text="YouTube, TikTok, Instagram...",
-        prefix_icon=ft.icons.LINK,
-        border_radius=15,
-        border_color=ft.colors.BLUE_400,
-        focused_border_color=ft.colors.BLUE_ACCENT_700,
-        width=320,
-    )
-
-    download_btn = ft.ElevatedButton(
-        content=ft.Row(
-            [ft.Icon(ft.icons.DOWNLOAD), ft.Text("İNDİRMEYİ BAŞLAT", weight="bold")],
-            alignment=ft.MainAxisAlignment.CENTER,
-            tight=True,
-        ),
-        style=ft.ButtonStyle(
-            color=ft.colors.WHITE,
-            bgcolor=ft.colors.BLUE_700,
-            shape=ft.RoundedRectangleBorder(radius=15),
-        ),
-        width=320,
-        height=50,
-        on_click=download_video
-    )
-
-    status_text = ft.Text("", size=14, italic=True)
-    progress_bar = ft.ProgressBar(width=300, color="blue", visible=False)
-
-    # Ana Tasarım (Container ile Arka Plan)
-    main_container = ft.Container(
-        content=ft.Column(
-            [
-                ft.Icon(ft.icons.ALL_INBOX_ROUNDED, size=80, color=ft.colors.BLUE_400),
-                ft.Text("DiyarBox", size=32, weight="bold", color=ft.colors.WHITE),
-                ft.Text("Çok Amaçlı Medya İndirici", size=14, color=ft.colors.BLUE_100),
-                ft.Divider(height=40, color="transparent"),
-                url_input,
-                ft.Divider(height=10, color="transparent"),
-                download_btn,
-                ft.Divider(height=20, color="transparent"),
-                progress_bar,
-                status_text,
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-        ),
-        gradient=ft.LinearGradient(
-            begin=ft.alignment.top_left,
-            end=ft.alignment.bottom_right,
-            colors=[ft.colors.BLUE_900, ft.colors.BLACK],
-        ),
-        width=float("inf"),
-        height=float("inf"),
-        expand=True,
-    )
-
-    page.add(main_container)
+    # Ekran Tasarımı
+    try:
+        page.add(
+            ft.Divider(height=40, color="transparent"),
+            ft.Icon(ft.icons.ALL_INBOX_ROUNDED, size=60, color=ft.colors.BLUE_400),
+            ft.Text("DiyarBox", size=30, weight="bold"),
+            ft.Divider(height=20, color="transparent"),
+            url_input,
+            ft.ElevatedButton(
+                "VİDEOYU İNDİR", 
+                on_click=download_video,
+                width=250,
+                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
+            ),
+            ft.Divider(height=20, color="transparent"),
+            status_text
+        )
+        startup_check()
+    except Exception as e:
+        # Eğer sayfa yüklenirken hata verirse bunu gösterir
+        page.add(ft.Text(f"Kritik Hata: {traceback.format_exc()}"))
 
 ft.app(target=main)
