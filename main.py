@@ -2,9 +2,8 @@ import os
 import ssl
 import flet as ft
 import yt_dlp
-import traceback
 
-# SSL Sertifika hatalarını bypass et
+# SSL Sertifika hatalarını kökten çözelim
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def main(page: ft.Page):
@@ -13,18 +12,16 @@ def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.AUTO
 
-    # Uygulama başladığında ilk burası çalışır
-    def startup_check():
-        status_text.value = "DiyarBox Hazır!"
-        page.update()
-
+    # Giriş Alanı
     url_input = ft.TextField(
         label="Video Linkini Buraya Yapıştır",
+        hint_text="YouTube, TikTok, Instagram...",
         width=320,
-        border_radius=10
+        border_radius=10,
+        border_color=ft.colors.BLUE_400
     )
     
-    status_text = ft.Text("Başlatılıyor...", text_align=ft.TextAlign.CENTER)
+    status_text = ft.Text("DiyarBox Kullanıma Hazır", text_align=ft.TextAlign.CENTER)
 
     def download_video(e):
         try:
@@ -33,10 +30,11 @@ def main(page: ft.Page):
                 page.update()
                 return
 
-            status_text.value = "🔄 İndirme başlatıldı..."
+            status_text.value = "🔄 İndirme başlatıldı... Lütfen bekleyin."
+            status_text.color = ft.colors.BLUE_200
             page.update()
 
-            # Infinix/Android için en stabil yol
+            # Android için en garanti indirme yolu
             download_path = '/storage/emulated/0/Download/%(title)s.%(ext)s'
 
             ydl_opts = {
@@ -53,32 +51,28 @@ def main(page: ft.Page):
             status_text.color = ft.colors.GREEN_400
             url_input.value = ""
         except Exception as ex:
-            # Hata oluşursa tam hatayı ekrana yazdır ki görebilelim
-            status_text.value = f"❌ Hata: {str(ex)}"
+            status_text.value = f"❌ Hata: {str(ex)[:100]}"
             status_text.color = ft.colors.RED_400
         
         page.update()
 
-    # Ekran Tasarımı
-    try:
-        page.add(
-            ft.Divider(height=40, color="transparent"),
-            ft.Icon(ft.icons.ALL_INBOX_ROUNDED, size=60, color=ft.colors.BLUE_400),
-            ft.Text("DiyarBox", size=30, weight="bold"),
-            ft.Divider(height=20, color="transparent"),
-            url_input,
-            ft.ElevatedButton(
-                "VİDEOYU İNDİR", 
-                on_click=download_video,
-                width=250,
-                style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
-            ),
-            ft.Divider(height=20, color="transparent"),
-            status_text
-        )
-        startup_check()
-    except Exception as e:
-        # Eğer sayfa yüklenirken hata verirse bunu gösterir
-        page.add(ft.Text(f"Kritik Hata: {traceback.format_exc()}"))
+    # Arayüz (Hatalı İkon Kaldırıldı, Standart İkon Eklendi)
+    page.add(
+        ft.Divider(height=40, color="transparent"),
+        # Hata veren ALL_INBOX_ROUNDED yerine en standart FILE_DOWNLOAD kullanıyoruz
+        ft.Icon(ft.icons.FILE_DOWNLOAD, size=60, color=ft.colors.BLUE_400),
+        ft.Text("DiyarBox", size=30, weight="bold"),
+        ft.Text("Infinix Hot 30 Edition", size=12, color=ft.colors.GREY_500),
+        ft.Divider(height=20, color="transparent"),
+        url_input,
+        ft.ElevatedButton(
+            "İNDİR", 
+            on_click=download_video,
+            width=250,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10))
+        ),
+        ft.Divider(height=20, color="transparent"),
+        status_text
+    )
 
 ft.app(target=main)
