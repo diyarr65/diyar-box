@@ -2,29 +2,33 @@ import os
 import ssl
 import flet as ft
 import yt_dlp
+import traceback
 
 # SSL Sertifika hatasını bypass et
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def main(page: ft.Page):
-    # Sayfa ayarlarını en basit halde tutalım
+    # En temel sayfa ayarları
     page.title = "DiyarBox"
     page.theme_mode = ft.ThemeMode.DARK
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.scroll = ft.ScrollMode.AUTO
     
-    # Durum takibi için etiket
-    status_text = ft.Text("Sistem Hazır", color=ft.colors.GREY_400)
+    # Durum mesajı (Sistemin çalıştığını anlamak için)
+    status_text = ft.Text("DiyarBox Başlatıldı...", color=ft.colors.GREEN_200)
     
-    # Link giriş kutusu
+    # Link giriş kutusu (En sade haliyle)
     url_input = ft.TextField(
-        label="Video Linki",
-        hint_text="Yapıştırın...",
-        width=300
+        label="Video Linki (YT, TikTok, IG)",
+        width=300,
+        border_radius=10
     )
 
     def download_video(e):
         try:
             if not url_input.value:
                 status_text.value = "⚠️ Link girmediniz!"
+                status_text.color = ft.colors.AMBER_400
                 page.update()
                 return
 
@@ -32,7 +36,7 @@ def main(page: ft.Page):
             status_text.color = ft.colors.BLUE_400
             page.update()
 
-            # Android için kesin yol
+            # Android için kesin ve güvenli yol
             download_path = '/storage/emulated/0/Download/%(title)s.%(ext)s'
 
             ydl_opts = {
@@ -49,27 +53,36 @@ def main(page: ft.Page):
             status_text.color = ft.colors.GREEN_400
             url_input.value = ""
         except Exception as ex:
-            # Hata mesajını kısa tutalım ki ekrana sığsın
-            status_text.value = f"❌ Hata: {str(ex)[:50]}"
+            # Hata olursa ekranda göster
+            status_text.value = f"❌ Hata: {str(ex)[:100]}"
             status_text.color = ft.colors.RED_400
         
         page.update()
 
-    # Tasarımı ekle (En basit haliyle)
-    page.add(
-        ft.Column(
-            [
-                ft.Text("DiyarBox", size=30, weight="bold"),
-                ft.Text("v1.2 - Kararlı Sürüm", size=12),
-                ft.Divider(height=20),
-                url_input,
-                ft.ElevatedButton("VİDEOYU İNDİR", on_click=download_video, width=300),
-                ft.Divider(height=10),
-                status_text
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+    # Arayüz oluşturma (Hata yakalayıcı içine alındı)
+    try:
+        page.add(
+            ft.Column(
+                [
+                    ft.Divider(height=40, color="transparent"),
+                    ft.Text("DiyarBox", size=35, weight="bold"),
+                    ft.Text("Multi-Downloader", size=14, color=ft.colors.GREY_500),
+                    ft.Divider(height=20, color="transparent"),
+                    url_input,
+                    ft.ElevatedButton(
+                        "İNDİRMEYİ BAŞLAT", 
+                        on_click=download_video, 
+                        width=300,
+                        height=50
+                    ),
+                    ft.Divider(height=20, color="transparent"),
+                    status_text
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            )
         )
-    )
+    except Exception as fatal:
+        # Eğer uygulama hiç açılmazsa hatayı metin olarak ekrana basar
+        page.add(ft.Text(f"Başlatma Hatası: {traceback.format_exc()}"))
 
-# Uygulama başlatma
 ft.app(target=main)
